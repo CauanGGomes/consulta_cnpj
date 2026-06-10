@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consulta CNPJ</title>
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: #eef1f6;
+    font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+    color: #000;
+    min-height: 100vh;
+  }
+
+  /* ========== HERO / HEADER ========== */
+  .hero {
+    background: linear-gradient(135deg, #0d2b4e 0%, #1a4a7a 60%, #1565c0 100%);
+    padding: 36px 20px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 11px;
+    color: #afd3ff;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .hero-badge::before { content: '●'; font-size: 8px; color: #4fc3f7; }
+  .hero h1 {
+    margin: 0 0 8px;
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -.3px;
+  }
+  .hero p {
+    margin: 0 0 32px;
+    font-size: 14px;
+    color: rgba(255,255,255,.65);
+  }
+
+  /* ========== SEARCH CARD ========== */
+  .search-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.1);
+    padding: 24px 28px;
+    max-width: 680px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+  .search-card label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    letter-spacing: .4px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .input-wrap {
+    position: relative;
+    flex: 1;
+  }
+  .input-wrap svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+    pointer-events: none;
+  }
+  .input-wrap input {
+    width: 100%;
+    padding: 13px 14px 13px 42px;
+    border: 2px solid #e0e5ee;
+    border-radius: 10px;
+    font-size: 16px;
+    letter-spacing: 1px;
+    color: #1a1a2e;
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+  }
+  .input-wrap input:focus {
+    border-color: #1565c0;
+    box-shadow: 0 0 0 4px rgba(21,101,192,.12);
+  }
+  .btn-buscar {
+    padding: 0 26px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1565c0, #0d47a1);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform .15s, box-shadow .15s, opacity .15s;
+    box-shadow: 0 4px 14px rgba(21,101,192,.4);
+    white-space: nowrap;
+  }
+  .btn-buscar:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(21,101,192,.45); }
+  .btn-buscar:active { transform: translateY(0); }
+  .btn-buscar:disabled { opacity: .6; cursor: default; transform: none; }
+
+  .search-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+  .btn-print {
+    background: none;
+    border: none;
+    color: #1565c0;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background .15s;
+  }
+  .btn-print:hover { background: #e8f0fe; }
+
+  /* ========== STATUS ========== */
+  .status-wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 12px 20px 0;
+  }
+  .status-msg {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .status-msg.show { display: flex; }
+  .status-msg.loading {
+    background: #e3f2fd;
+    color: #0d47a1;
+  }
+  .status-msg.err {
+    background: #fdecea;
+    color: #b71c1c;
+    border: 1px solid #f5c6cb;
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid #90caf9;
+    border-top-color: #1565c0;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ========== PÁGINA DO COMPROVANTE ========== */
+  .page-wrap {
+    padding: 20px 12px 60px;
+  }
+  .hint {
+    text-align: center;
+    color: #888;
+    font-size: 13px;
+    padding: 32px 16px;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .sheet {
+    background: #fff;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 22px 28px 28px;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.12), 0 1px 4px rgba(0,0,0,.08);
+    display: none;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  .sheet.show { display: block; }
+
+  /* ---- Cabeçalho do comprovante ---- */
+  .header { text-align: center; position: relative; margin-bottom: 12px; min-height: 68px; padding: 0 80px; }
+  .header .brasao { position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 66px; height: 66px; }
+  .header .t1 { font-size: 17px; font-weight: 700; letter-spacing: .4px; margin-top: 6px; }
+  .header .t2 { font-size: 14px; font-weight: 700; margin-top: 12px; letter-spacing: .3px; }
+
+  /* ---- Tabela cadastral ---- */
+  table.cad { width: 100%; border-collapse: collapse; }
+  table.cad + table.cad { border-top: none; }
+  table.cad td { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
+  .lbl {
+    font-size: 8px; text-transform: uppercase;
+    letter-spacing: .25px; display: block; margin-bottom: 2px; font-weight: 400;
+  }
+  .val { font-size: 12px; font-weight: 700; line-height: 1.35; white-space: pre-line; }
+  .titulo-central { text-align: center; vertical-align: middle !important; }
+  .titulo-central .val { font-size: 12px; }
+
+  .sit-ativa   { color: #1a7a2e; }
+  .sit-baixada { color: #b00020; }
+  .sit-outras  { color: #c55000; }
+
+  /* ---- QSA ---- */
+  .qsa-wrap { border: 1px solid #000; border-top: none; }
+  .qsa-titulo {
+    font-size: 8px; text-transform: uppercase; letter-spacing: .25px;
+    padding: 3px 6px; background: #f0f0f0; border-bottom: 1px solid #000; font-weight: 700;
+  }
+  .qsa-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  .qsa-table td { padding: 4px 6px; border-top: 1px solid #ccc; vertical-align: top; }
+  .qsa-table tr:first-child td { border-top: none; }
+  .qsa-table .q-nome { font-weight: 700; width: 52%; }
+  .qsa-table .q-qual { width: 30%; }
+  .qsa-table .q-pais { width: 18%; font-size: 10.5px; color: #444; }
+
+  /* ---- Capital social extra ---- */
+  .info-extra { border: 1px solid #000; border-top: none; }
+  .info-extra td { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
+
+  /* ========== IMPRESSÃO ========== */
+  @media print {
+    .hero, .status-wrap, .hint, .btn-print { display: none !important; }
+    body { background: #fff; }
+    .page-wrap { padding: 0; top: 0; }
+    .sheet { box-shadow: none; border: none; max-width: 100%; margin: 0; padding: 6px; display: block !important; }
+  }
+
+  /* ========== RESPONSIVO ========== */
+  @media (max-width: 520px) {
+    .hero h1 { font-size: 22px; }
+    .search-card { padding: 18px 16px; border-radius: 12px; }
+    .input-row { flex-direction: column; }
+    .btn-buscar { padding: 13px; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== HERO ===== -->
+<div class="hero">
+  <div class="hero-badge">Receita Federal · BrasilAPI</div>
+  <h1>Consulta de CNPJ</h1>
+  <p>Emita o comprovante de inscrição e situação cadastral instantaneamente</p>
+
+  <div class="search-card">
+    <label for="cnpj">CNPJ da empresa</label>
+    <div class="input-row">
+      <div class="input-wrap">
+        <!-- Ícone de busca -->
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input id="cnpj" type="text" placeholder="00.000.000/0000-00" maxlength="18"
+               autocomplete="off" spellcheck="false"
+               oninput="mascaraCnpj(this)"
+               onkeydown="if(event.key==='Enter')buscar()">
+      </div>
+      <button class="btn-buscar" id="btn-buscar" onclick="buscar()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        Emitir Comprovante
+      </button>
+    </div>
+    <div class="search-actions">
+      <button class="btn-print" onclick="window.print()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 6 2 18 2 18 9"/>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+          <rect x="6" y="14" width="12" height="8"/>
+        </svg>
+        Imprimir / Salvar PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STATUS ===== -->
+<div class="status-wrap">
+  <div class="status-msg" id="status-loading">
+    <div class="spinner"></div>
+    <span>Consultando dados na Receita Federal...</span>
+  </div>
+  <div class="status-msg err" id="status-err">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <span id="status-err-msg"></span>
+  </div>
+</div>
+
+<!-- ===== COMPROVANTE ===== -->
+<div class="page-wrap">
+  <p class="hint" id="hint">Digite um CNPJ acima para gerar o comprovante oficial.</p>
+
+  <div class="sheet" id="sheet">
+
+    <!-- Cabeçalho oficial -->
+    <div class="header">
+      <svg class="brasao" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="96" fill="#2e7d32" stroke="#1b5e20" stroke-width="3"/>
+        <ellipse cx="100" cy="100" rx="72" ry="45" fill="#1565c0" transform="rotate(-20,100,100)"/>
+        <circle cx="100" cy="100" r="54" fill="#fff8e1" stroke="#e8a000" stroke-width="2"/>
+        <circle cx="100" cy="100" r="22" fill="#1565c0"/>
+        <polygon points="100,72 106,90 124,90 110,101 116,119 100,108 84,119 90,101 76,90 94,90" fill="#fff" opacity=".85"/>
+        <circle cx="100" cy="100" r="96" fill="none" stroke="#ffd600" stroke-width="4"/>
+        <path d="M 20,120 Q 100,170 180,120" fill="none" stroke="#fff" stroke-width="14"/>
+        <path d="M 20,120 Q 100,170 180,120" fill="none" stroke="#1565c0" stroke-width="2"/>
+      </svg>
+      <div class="t1">REPÚBLICA FEDERATIVA DO BRASIL</div>
+      <div class="t2">CADASTRO NACIONAL DA PESSOA JURÍDICA</div>
+    </div>
+
+    <!-- Linha 1 -->
+    <table class="cad">
+      <tr>
+        <td style="width:29%">
+          <span class="lbl">Número de Inscrição</span>
+          <span class="val" id="f_cnpj"></span>
+          <span style="display:block;font-size:11px;font-weight:700;margin-top:2px" id="f_tipo"></span>
+        </td>
+        <td class="titulo-central" style="width:45%">
+          <span class="val">COMPROVANTE DE INSCRIÇÃO E DE<br>SITUAÇÃO CADASTRAL</span>
+        </td>
+        <td style="width:26%">
+          <span class="lbl">Data de Abertura</span>
+          <span class="val" id="f_abertura"></span>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Demais campos -->
+    <table class="cad" style="border-top:none">
+      <tr>
+        <td colspan="4">
+          <span class="lbl">Nome Empresarial</span>
+          <span class="val" id="f_nome"></span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3">
+          <span class="lbl">Título do Estabelecimento (Nome de Fantasia)</span>
+          <span class="val" id="f_fantasia"></span>
+        </td>
+        <td style="width:16%">
+          <span class="lbl">Porte</span>
+          <span class="val" id="f_porte"></span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="4">
+          <span class="lbl">Código e Descrição da Atividade Econômica Principal</span>
+          <span class="val" id="f_cnae_p"></span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="4">
+          <span class="lbl">Código e Descrição das Atividades Econômicas Secundárias</span>
+          <span class="val" id="f_cnae_s"></span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="4">
+          <span class="lbl">Código e Descrição da Natureza Jurídica</span>
+          <span class="val" id="f_natureza"></span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <span class="lbl">Logradouro</span>
+          <span class="val" id="f_logradouro"></span>
+        </td>
+        <td style="width:14%">
+          <span class="lbl">Número</span>
+          <span class="val" id="f_numero"></span>
+        </td>
+        <td style="width:22%">
+          <span class="lbl">Complemento</span>
+          <span class="val" id="f_compl"></span>
+        </td>
+      </tr>
+      <tr>
+        <td style="width:18%">
+          <span class="lbl">CEP</span>
+          <span class="val" id="f_cep"></span>
+        </td>
+        <td style="width:28%">
+          <span class="lbl">Bairro / Distrito</span>
+          <span class="val" id="f_bairro"></span>
+        </td>
+        <td style="width:40%">
+          <span class="lbl">Município</span>
+          <span class="val" id="f_municipio"></span>
+        </td>
+        <td style="width:14%">
+          <span class="lbl">UF</span>
+          <span class="val" id="f_uf"></span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3">
+          <span class="lbl">Endereço Eletrônico</span>
+          <span class="val" id="f_email"></span>
+        </td>
+        <td>
+          <span class="lbl">Telefone</span>
+          <span class="val" id="f_tel"></span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="4">
+          <span class="lbl">Ente Federativo Responsável (EFR)</span>
+          <span class="val" id="f_efr">*****</span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3">
+          <span class="lbl">Situação Cadastral</span>
+          <span class="val" id="f_sit"></span>
+        </td>
+        <td>
+          <span class="lbl">Data da Situação Cadastral</span>
+          <span class="val" id="f_sit_data"></span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="4">
+          <span class="lbl">Motivo de Situação Cadastral</span>
+          <span class="val" id="f_motivo">&nbsp;</span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3">
+          <span class="lbl">Situação Especial</span>
+          <span class="val" id="f_sit_esp">********</span>
+        </td>
+        <td>
+          <span class="lbl">Data da Situação Especial</span>
+          <span class="val" id="f_sit_esp_data">********</span>
+        </td>
+      </tr>
+    </table>
+
+    <!-- QSA -->
+    <div class="qsa-wrap">
+      <div class="qsa-titulo">Quadro de Sócios e Administradores</div>
+      <table class="qsa-table" id="qsa-table">
+        <tr><td colspan="3" style="color:#888;font-size:11px">Não informado</td></tr>
+      </table>
+    </div>
+
+    <!-- Capital social -->
+    <table class="info-extra" id="extra-wrap" style="display:none;border-top:none">
+      <tr>
+        <td style="width:50%">
+          <span class="lbl">Capital Social</span>
+          <span class="val" id="f_capital"></span>
+        </td>
+        <td>
+          <span class="lbl">Consulta realizada em</span>
+          <span class="val" id="f_rodape" style="font-size:10px;font-weight:400"></span>
+        </td>
+      </tr>
+    </table>
+
+  </div>
+</div>
+
+<script>
+const API = "https://brasilapi.com.br/api/cnpj/v1/";
+
+function mascaraCnpj(el){
+  let v = el.value.replace(/\D/g,"");
+  if(v.length > 14) v = v.slice(0,14);
+  v = v.replace(/^(\d{2})(\d)/,        "$1.$2")
+       .replace(/^(\d{2}\.\d{3})(\d)/,  "$1.$2")
+       .replace(/\.(\d{3})(\d)/,        ".$1/$2")
+       .replace(/(\d{4})(\d)/,          "$1-$2");
+  el.value = v;
+}
+
+function soNumeros(t){ return (t||"").replace(/\D/g,""); }
+function fmtCnpj(c){ c=soNumeros(c).padStart(14,"0"); return c.slice(0,2)+"."+c.slice(2,5)+"."+c.slice(5,8)+"/"+c.slice(8,12)+"-"+c.slice(12); }
+function fmtData(d){ if(!d)return""; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d); return m?m[3]+"/"+m[2]+"/"+m[1]:d; }
+function fmtCnae(c){ c=String(c).padStart(7,"0"); return c.slice(0,4)+"-"+c.slice(4,5)+"/"+c.slice(5); }
+function fmtCep(c){ c=soNumeros(c); return c.length===8?c.slice(0,2)+"."+c.slice(2,5)+"-"+c.slice(5):(c||""); }
+function fmtTel(t){ if(!t)return""; const n=soNumeros(t); if(n.length===10)return"("+n.slice(0,2)+") "+n.slice(2,6)+"-"+n.slice(6); if(n.length===11)return"("+n.slice(0,2)+") "+n.slice(2,7)+"-"+n.slice(7); return t; }
+function fmtCapital(v){ if(v==null||v==="")return null; return"R$ "+Number(v).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function set(id,val){ const el=document.getElementById(id); if(el)el.textContent=(val==null||val==="")?"":(val); }
+
+function setStatus(type, msg){
+  document.getElementById("status-loading").classList.remove("show");
+  document.getElementById("status-err").classList.remove("show");
+  if(type==="loading") document.getElementById("status-loading").classList.add("show");
+  if(type==="err"){ document.getElementById("status-err-msg").textContent=msg; document.getElementById("status-err").classList.add("show"); }
+}
+
+async function buscar(){
+  const cnpj = soNumeros(document.getElementById("cnpj").value);
+  setStatus(null);
+  if(cnpj.length !== 14){ setStatus("err","CNPJ inválido — precisa ter 14 dígitos."); return; }
+
+  const btn = document.getElementById("btn-buscar");
+  btn.disabled = true;
+  setStatus("loading");
+  document.getElementById("sheet").classList.remove("show");
+  document.getElementById("hint").style.display = "none";
+
+  try {
+    const r = await fetch(API + cnpj);
+    if(r.status===404) throw new Error("CNPJ não encontrado na base da Receita Federal.");
+    if(r.status===429) throw new Error("Muitas consultas seguidas — aguarde alguns segundos e tente novamente.");
+    if(!r.ok) throw new Error("Erro HTTP " + r.status + ".");
+    const d = await r.json();
+    preencher(d);
+    setStatus(null);
+    document.getElementById("sheet").classList.add("show");
+  } catch(e) {
+    setStatus("err", e.message || "Falha na consulta.");
+    document.getElementById("hint").style.display = "block";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function preencher(d){
+  set("f_cnpj", fmtCnpj(d.cnpj));
+  set("f_tipo", d.identificador_matriz_filial===2?"FILIAL":"MATRIZ");
+  set("f_abertura", fmtData(d.data_inicio_atividade));
+  set("f_nome", d.razao_social);
+  set("f_fantasia", d.nome_fantasia||"********");
+  set("f_porte", d.descricao_porte||d.porte||"");
+  const cnaeP=[d.cnae_fiscal?fmtCnae(d.cnae_fiscal):"",d.cnae_fiscal_descricao||""].filter(Boolean).join(" - ");
+  set("f_cnae_p", cnaeP);
+  const sec=(d.cnaes_secundarios||[]).filter(c=>c.codigo&&c.codigo!==0).map(c=>fmtCnae(c.codigo)+" - "+c.descricao);
+  set("f_cnae_s", sec.length?sec.join("\n"):"Não informada");
+  set("f_natureza", d.natureza_juridica||"");
+  set("f_logradouro", ((d.descricao_tipo_de_logradouro||"")+" "+(d.logradouro||"")).trim());
+  set("f_numero", d.numero||"");
+  set("f_compl", d.complemento||"");
+  set("f_cep", fmtCep(d.cep));
+  set("f_bairro", d.bairro||"");
+  set("f_municipio", d.municipio||"");
+  set("f_uf", d.uf||"");
+  set("f_email", (d.email||"").toUpperCase());
+  set("f_tel", fmtTel(d.ddd_telefone_1));
+
+  const sit=(d.descricao_situacao_cadastral||"").toUpperCase();
+  const sitEl=document.getElementById("f_sit");
+  sitEl.textContent=sit;
+  sitEl.className="val "+(sit==="ATIVA"?"sit-ativa":sit==="BAIXADA"?"sit-baixada":"sit-outras");
+  set("f_sit_data", fmtData(d.data_situacao_cadastral));
+  const mot=d.descricao_motivo_situacao_cadastral||"";
+  set("f_motivo",(mot.toUpperCase()==="SEM MOTIVO"||!mot)?"":mot);
+
+  const socios=d.qsa||[];
+  document.getElementById("qsa-table").innerHTML=socios.length
+    ?socios.map(s=>`<tr><td class="q-nome">${(s.nome_socio||"").toUpperCase()}</td><td class="q-qual">${s.qualificacao_socio||""}</td><td class="q-pais">${s.nome_pais_origem||""}</td></tr>`).join("")
+    :'<tr><td colspan="3" style="color:#888;font-size:11px">Não informado</td></tr>';
+
+  const cap=fmtCapital(d.capital_social);
+  const ew=document.getElementById("extra-wrap");
+  if(cap){ set("f_capital",cap); set("f_rodape",new Date().toLocaleString("pt-BR")+" · BrasilAPI"); ew.style.display=""; }
+  else ew.style.display="none";
+}
+</script>
+</body>
+</html>
